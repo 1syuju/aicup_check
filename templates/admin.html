@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>管理員後台 - AI CUP 2025</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body {
+            background: #f8f9fa;
+            font-family: 'Microsoft JhengHei', sans-serif;
+        }
+        .navbar {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            margin-bottom: 20px;
+        }
+        .card-header {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px 15px 0 0 !important;
+        }
+        .stats-card {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .stats-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .search-box {
+            border-radius: 25px;
+            border: 2px solid #e9ecef;
+            padding: 12px 20px;
+        }
+        .search-box:focus {
+            border-color: #667eea;
+            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+        }
+        .table th {
+            background: #f8f9fa;
+            border-top: none;
+            font-weight: 600;
+        }
+        .status-badge {
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .btn-action {
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+        .back-btn {
+            color: white;
+            text-decoration: none;
+        }
+        .back-btn:hover {
+            color: #f8f9fa;
+        }
+    </style>
+</head>
+<body>
+    <!-- 導航欄 -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="fas fa-clipboard-check me-2"></i>
+                AI CUP 2025 報到系統
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link back-btn" href="/">
+                    <i class="fas fa-home me-1"></i>返回首頁
+                </a>
+                <a class="nav-link back-btn" href="/admin_logout">
+                    <i class="fas fa-sign-out-alt me-1"></i>登出
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- 統計卡片 -->
+        <div class="row">
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <i class="fas fa-users fa-2x mb-3"></i>
+                    <div class="stats-number">{{ total_count }}</div>
+                    <div>總參加人數</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <i class="fas fa-check-circle fa-2x mb-3"></i>
+                    <div class="stats-number">{{ checked_in_count }}</div>
+                    <div>已報到人數</div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stats-card">
+                    <i class="fas fa-percentage fa-2x mb-3"></i>
+                    <div class="stats-number">
+                        {% if total_count > 0 %}
+                            {{ "%.1f"|format(checked_in_count / total_count * 100) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </div>
+                    <div>報到率</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 功能按鈕 -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <a href="/import_fixed" class="btn btn-warning btn-lg me-2">
+                    <i class="fas fa-file-import me-2"></i>重新載入固定名單
+                </a>
+                <button class="btn btn-success btn-lg" onclick="exportData()">
+                    <i class="fas fa-download me-2"></i>匯出報到資料
+                </button>
+            </div>
+            <div class="col-md-6">
+                <div class="input-group">
+                    <input type="text" class="form-control search-box" id="searchInput" 
+                           placeholder="搜尋參加者（姓名、Email、組織）">
+                    <button class="btn btn-outline-secondary" type="button" onclick="searchParticipants()">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 參加者列表 -->
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">
+                    <i class="fas fa-list me-2"></i>
+                    參加者列表
+                </h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>姓名</th>
+                                <th>Email</th>
+                                <th>組織/學校</th>
+                                <th>報到狀態</th>
+                                <th>報到時間</th>
+                                <th>操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="participantsTable">
+                            {% for participant in participants %}
+                            <tr>
+                                <td>{{ participant.name }}</td>
+                                <td>{{ participant.email }}</td>
+                                <td>{{ participant.organization or '未填寫' }}</td>
+                                <td>
+                                    {% if participant.checkin_status %}
+                                        <span class="badge bg-success status-badge">
+                                            <i class="fas fa-check me-1"></i>已報到
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-secondary status-badge">
+                                            <i class="fas fa-clock me-1"></i>未報到
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if participant.checkin_time %}
+                                        {{ participant.checkin_time.strftime('%Y-%m-%d %H:%M:%S') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+
+                                    {% if not participant.checkin_status %}
+                                        <button class="btn btn-success btn-action" 
+                                                onclick="manualCheckin('{{ participant.id }}')"
+                                                title="手動報到">
+                                            <i class="fas fa-check"></i>
+                                        </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 搜尋結果模態框 -->
+    <div class="modal fade" id="searchModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">搜尋結果</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="searchResults">
+                    <!-- 搜尋結果將在這裡顯示 -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // 搜尋參加者
+        async function searchParticipants() {
+            const query = document.getElementById('searchInput').value.trim();
+            if (!query) {
+                alert('請輸入搜尋關鍵字');
+                return;
+            }
+
+            try {
+                const response = await fetch('/api/search', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ query })
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    displaySearchResults(data.results);
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert('搜尋失敗，請稍後再試');
+            }
+        }
+
+        // 顯示搜尋結果
+        function displaySearchResults(results) {
+            const modal = new bootstrap.Modal(document.getElementById('searchModal'));
+            const resultsContainer = document.getElementById('searchResults');
+            
+            if (results.length === 0) {
+                resultsContainer.innerHTML = '<p class="text-center text-muted">沒有找到符合的結果</p>';
+            } else {
+                let html = '<div class="table-responsive"><table class="table">';
+                html += '<thead><tr><th>姓名</th><th>Email</th><th>組織</th><th>報到狀態</th><th>報到時間</th></tr></thead><tbody>';
+                
+                results.forEach(participant => {
+                    const status = participant.checkin_status ? 
+                        '<span class="badge bg-success">已報到</span>' : 
+                        '<span class="badge bg-secondary">未報到</span>';
+                    
+                    const checkinTime = participant.checkin_time || '-';
+                    
+                    html += `<tr>
+                        <td>${participant.name}</td>
+                        <td>${participant.email}</td>
+                        <td>${participant.organization || '未填寫'}</td>
+                        <td>${status}</td>
+                        <td>${checkinTime}</td>
+                    </tr>`;
+                });
+                
+                html += '</tbody></table></div>';
+                resultsContainer.innerHTML = html;
+            }
+            
+            modal.show();
+        }
+
+        // 手動報到
+        async function manualCheckin(participantId) {
+            if (!confirm('確定要為此參加者進行手動報到嗎？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/manual_checkin/${participantId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                });
+
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('手動報到成功！');
+                    location.reload(); // 重新載入頁面
+                } else {
+                    alert(data.message);
+                }
+            } catch (error) {
+                alert('操作失敗，請稍後再試');
+            }
+        }
+
+        // 匯出資料
+        async function exportData() {
+            try {
+                const response = await fetch('/export');
+                const data = await response.json();
+                
+                if (data.success) {
+                    alert('資料匯出成功！');
+                    // 可以添加下載連結
+                } else {
+                    alert('匯出失敗');
+                }
+            } catch (error) {
+                alert('匯出失敗，請稍後再試');
+            }
+        }
+
+        // 按Enter鍵搜尋
+        document.getElementById('searchInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                searchParticipants();
+            }
+        });
+
+        // 頁面載入時檢查名單
+        document.addEventListener('DOMContentLoaded', function() {
+            // 如果沒有參加者，自動載入固定名單
+            const totalCount = parseInt('{{ total_count }}');
+            if (totalCount === 0) {
+                if (confirm('目前沒有參加者資料，是否要自動載入固定名單？')) {
+                    window.location.href = '/import_fixed';
+                }
+            }
+        });
+    </script>
+</body>
+</html>
