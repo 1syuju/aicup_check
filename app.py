@@ -1,5 +1,5 @@
 import os
-from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_file
+from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_file, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 import pandas as pd
@@ -10,6 +10,9 @@ from datetime import datetime
 
 # 寫死Excel名單路徑（Windows）
 FIXED_XLSX_PATH = r"C:\\Users\\USER\\Desktop\\python\\aicup2025_1\\AI CUP 2025 教育部獎狀總整理.xlsx"
+
+# 管理員密碼（簡單認證）
+ADMIN_PASSWORD = '33urriii'
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
@@ -114,20 +117,41 @@ def import_fixed():
 
 @app.route('/')
 def index():
-    """首頁 - 顯示報到系統選項"""
-    return render_template('index.html')
+    is_admin = session.get('admin_authenticated', False)
+    return render_template('index.html', is_admin=is_admin)
 
 @app.route('/checkin')
 def checkin():
     """報到介面 - 給參加者使用"""
     return render_template('checkin.html')
 
+
+@app.route('/admin_login', methods=['GET', 'POST'])
+def admin_login():
+    """管理員登入頁面"""
+    if request.method == 'POST':
+        password = request.form.get('password')
+        if password == ADMIN_PASSWORD:
+            session['admin_authenticated'] = True
+            flash('登入成功！', 'success')
+            return redirect(url_for('admin'))
+        else:
+            flash('密碼錯誤！', 'error')
+    return render_template('admin_login.html')
+
+
+@app.route('/admin_logout')
+def admin_logout():
+    session.pop('admin_authenticated', None)
+    flash('已登出', 'info')
+    return redirect(url_for('index'))
+
 from flask import abort, request
 @app.route('/admin')
 def admin():
-    # 只允許本機存取
-    if request.remote_addr != '127.0.0.1':
-        abort(403)
+    # 允許本機存取或透過管理員登入存取
+    if request.remote_addr != '127.0.0.1' and not session.get('admin_authenticated'):
+        return redirect(url_for('admin_login'))
     participants = Participant.query.all()
     total_count = len(participants)
     # 統計已報到人數
@@ -141,6 +165,26 @@ def admin():
                          participants=participants, 
                          total_count=total_count,
                          checked_in_count=checked_in_count)
+
+'''
+@app.route('/api/stats', methods=['GET'])
+def api_stats():
+    """API: 取得報到統計資料（供公開主頁面使用）"""
+    total_count = db.session.query(Participant).count()
+    checked_in_count = db.session.query(CheckinLog).distinct(CheckinLog.participant_id).count()
+    
+    # 計算報到率
+    checkin_rate = 0
+    if total_count > 0:
+        checkin_rate = round((checked_in_count / total_count) * 100, 1)
+        
+    return jsonify({
+        'success': True,
+        'total_count': total_count,
+        'checked_in_count': checked_in_count,
+        'checkin_rate': checkin_rate
+    })
+'''
 
 @app.route('/api/checkin', methods=['POST'])
 def api_checkin():
