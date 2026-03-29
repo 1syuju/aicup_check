@@ -12,7 +12,7 @@
             font-family: 'Microsoft JhengHei', sans-serif;
         }
         .navbar {
-            background: linear-gradient(45deg, #a2a6b9, #a2a6b9);
+            background: linear-gradient(45deg, #a2a6b9, #7685c9);
             box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
         .card {
@@ -22,12 +22,12 @@
             margin-bottom: 20px;
         }
         .card-header {
-            background: linear-gradient(45deg, #a2a6b9, #a2a6b9);
+            background: linear-gradient(45deg, #a2a6b9, #7685c9);
             color: white;
             border-radius: 15px 15px 0 0 !important;
         }
         .stats-card {
-            background: linear-gradient(45deg, #a2a6b9, #a2a6b9);
+            background: linear-gradient(45deg, #a2a6b9, #7685c9);
             color: white;
             border-radius: 15px;
             padding: 20px;
@@ -45,13 +45,16 @@
             padding: 12px 20px;
         }
         .search-box:focus {
-            border-color: #667eea;
-            box-shadow: 0 0 0 0.2rem rgba(102, 126, 234, 0.25);
+            border-color: #7685c9;
+            box-shadow: 0 0 0 0.2rem rgba(118, 133, 201, 0.25);
         }
         .table th {
             background: #f8f9fa;
             border-top: none;
             font-weight: 600;
+            position: sticky;
+            top: 0;
+            z-index: 1;
         }
         .status-badge {
             border-radius: 20px;
@@ -70,6 +73,10 @@
         }
         .back-btn:hover {
             color: #f8f9fa;
+        }
+        .participants-scroll {
+            max-height: 70vh;
+            overflow-y: auto;
         }
     </style>
 </head>
@@ -137,7 +144,7 @@
             <div class="col-md-6">
                 <div class="input-group">
                     <input type="text" class="form-control search-box" id="searchInput" 
-                           placeholder="搜尋參加者（姓名、Email、組織）">
+                           placeholder="搜尋參加者（姓名、組織、競賽、座號）">
                     <button class="btn btn-outline-secondary" type="button" onclick="searchParticipants()">
                         <i class="fas fa-search"></i>
                     </button>
@@ -154,13 +161,15 @@
                 </h5>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
+                <div class="table-responsive participants-scroll">
                     <table class="table table-hover">
                         <thead>
                             <tr>
+                                <th>編號</th>
                                 <th>姓名</th>
-                                <th>Email</th>
                                 <th>組織/學校</th>
+                                <th>競賽</th>
+                                <th>座號</th>
                                 <th>報到狀態</th>
                                 <th>報到時間</th>
                                 <th>操作</th>
@@ -169,11 +178,13 @@
                         <tbody id="participantsTable">
                             {% for participant in participants %}
                             <tr>
+                                <td>{{ loop.index }}</td>
                                 <td>{{ participant.name }}</td>
-                                <td>{{ participant.email }}</td>
                                 <td>{{ participant.organization or '未填寫' }}</td>
+                                <td>{{ participant.competition_name or '未填寫' }}</td>
+                                <td>{{ participant.seat_number or '未填寫' }}</td>
                                 <td>
-                                    {% if participant.checkin_status %}
+                                    {% if participant.is_checked_in %}
                                         <span class="badge bg-success status-badge">
                                             <i class="fas fa-check me-1"></i>已報到
                                         </span>
@@ -184,20 +195,25 @@
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if participant.checkin_time %}
-                                        {{ participant.checkin_time.strftime('%Y-%m-%d %H:%M:%S') }}
+                                    {% if participant.is_checked_in %}
+                                        {% set checkin = participant.checkins[0] if participant.checkins else None %}
+                                        {% if checkin %}
+                                            {{ checkin.checkin_time.strftime('%Y-%m-%d %H:%M:%S') }}
+                                        {% else %}
+                                            -
+                                        {% endif %}
                                     {% else %}
                                         -
                                     {% endif %}
                                 </td>
                                 <td>
-
-                                    {% if not participant.checkin_status %}
-                                        <button class="btn btn-success btn-action" 
-                                                onclick="manualCheckin('{{ participant.id }}')"
-                                                title="手動報到">
-                                            <i class="fas fa-check"></i>
-                                        </button>
+                                    {% if not participant.is_checked_in %}
+                                        <a href="/manual_checkin/{{ participant.id }}" 
+                                           class="btn btn-success btn-action"
+                                           onclick="return confirm('確定要為此參加者進行手動報到嗎？')"
+                                           title="手動報到">
+                                            <i class="fas fa-check"></i> 報到
+                                        </a>
                                     {% endif %}
                                 </td>
                             </tr>
@@ -264,9 +280,9 @@
                 resultsContainer.innerHTML = '<p class="text-center text-muted">沒有找到符合的結果</p>';
             } else {
                 let html = '<div class="table-responsive"><table class="table">';
-                html += '<thead><tr><th>姓名</th><th>Email</th><th>組織</th><th>報到狀態</th><th>報到時間</th></tr></thead><tbody>';
+                html += '<thead><tr><th>編號</th><th>姓名</th><th>組織</th><th>競賽</th><th>座號</th><th>報到狀態</th><th>報到時間</th></tr></thead><tbody>';
                 
-                results.forEach(participant => {
+                results.forEach((participant, index) => {
                     const status = participant.checkin_status ? 
                         '<span class="badge bg-success">已報到</span>' : 
                         '<span class="badge bg-secondary">未報到</span>';
@@ -274,9 +290,11 @@
                     const checkinTime = participant.checkin_time || '-';
                     
                     html += `<tr>
+                        <td>${index + 1}</td>
                         <td>${participant.name}</td>
-                        <td>${participant.email}</td>
                         <td>${participant.organization || '未填寫'}</td>
+                        <td>${participant.competition_name || '未填寫'}</td>
+                        <td>${participant.seat_number || '未填寫'}</td>
                         <td>${status}</td>
                         <td>${checkinTime}</td>
                     </tr>`;
@@ -289,48 +307,9 @@
             modal.show();
         }
 
-        // 手動報到
-        async function manualCheckin(participantId) {
-            if (!confirm('確定要為此參加者進行手動報到嗎？')) {
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/manual_checkin/${participantId}`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    }
-                });
-
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('手動報到成功！');
-                    location.reload(); // 重新載入頁面
-                } else {
-                    alert(data.message);
-                }
-            } catch (error) {
-                alert('操作失敗，請稍後再試');
-            }
-        }
-
         // 匯出資料
-        async function exportData() {
-            try {
-                const response = await fetch('/export');
-                const data = await response.json();
-                
-                if (data.success) {
-                    alert('資料匯出成功！');
-                    // 可以添加下載連結
-                } else {
-                    alert('匯出失敗');
-                }
-            } catch (error) {
-                alert('匯出失敗，請稍後再試');
-            }
+        function exportData() {
+            window.location.href = '/export';
         }
 
         // 按Enter鍵搜尋
@@ -340,15 +319,74 @@
             }
         });
 
+        // 更新統計資訊
+        function updateStats(data) {
+            // 更新統計卡片
+            document.querySelectorAll('.stats-card .stats-number')[0].textContent = data.total_count;
+            document.querySelectorAll('.stats-card .stats-number')[1].textContent = data.checked_in_count;
+            document.querySelectorAll('.stats-card .stats-number')[2].textContent = data.checkin_rate + '%';
+        }
+
+        // 更新參加者列表
+        function updateParticipantsTable(participants) {
+            const tbody = document.getElementById('participantsTable');
+            let html = '';
+            
+            participants.forEach((participant, index) => {
+                const statusBadge = participant.is_checked_in ? 
+                    '<span class="badge bg-success status-badge"><i class="fas fa-check me-1"></i>已報到</span>' :
+                    '<span class="badge bg-secondary status-badge"><i class="fas fa-clock me-1"></i>未報到</span>';
+                
+                const checkinTime = participant.checkin_time || '-';
+                const actionBtn = participant.is_checked_in ? '' :
+                    `<a href="/manual_checkin/${participant.id}" class="btn btn-success btn-action" onclick="return confirm('確定要為此參加者進行手動報到嗎？')" title="手動報到"><i class="fas fa-check"></i> 報到</a>`;
+                
+                html += `
+                    <tr>
+                        <td>${index + 1}</td>
+                        <td>${participant.name}</td>
+                        <td>${participant.organization || '未填寫'}</td>
+                        <td>${participant.competition_name || '未填寫'}</td>
+                        <td>${participant.seat_number || '未填寫'}</td>
+                        <td>${statusBadge}</td>
+                        <td>${checkinTime}</td>
+                        <td>${actionBtn}</td>
+                    </tr>
+                `;
+            });
+            
+            tbody.innerHTML = html;
+        }
+
+        // 自動刷新報到狀態（每30秒）
+        async function refreshCheckinStatus() {
+            try {
+                const response = await fetch('/api/admin_stats');
+                const data = await response.json();
+                
+                if (data.success) {
+                    updateStats(data);
+                    updateParticipantsTable(data.participants);
+                }
+            } catch (error) {
+                console.error('更新狀態失敗:', error);
+            }
+        }
+        
+        // 每30秒自動刷新一次
+        setInterval(refreshCheckinStatus, 30000);
+
         // 頁面載入時檢查名單
         document.addEventListener('DOMContentLoaded', function() {
-            // 如果沒有參加者，自動載入固定名單
             const totalCount = parseInt('{{ total_count }}');
             if (totalCount === 0) {
                 if (confirm('目前沒有參加者資料，是否要自動載入固定名單？')) {
                     window.location.href = '/import_fixed';
                 }
             }
+            
+            // 顯示自動刷新提示
+            console.log('報到狀態將每30秒自動更新');
         });
     </script>
 </body>

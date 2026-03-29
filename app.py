@@ -2,6 +2,7 @@ import os
 from flask import Flask, render_template, request, jsonify, redirect, url_for, flash, send_file, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
+from sqlalchemy import inspect, text
 import pandas as pd
 import qrcode
 import io
@@ -9,7 +10,7 @@ import base64
 from datetime import datetime
 
 # 寫死Excel名單路徑（Windows）
-FIXED_XLSX_PATH = r"C:\\Users\\USER\\Desktop\\python\\aicup2025_1\\AI CUP 2025 教育部獎狀總整理.xlsx"
+FIXED_XLSX_PATH = r"C:\\Users\\USER\\Desktop\\python\\aicup2025_1\\guest_final.xlsx"
 
 # 管理員密碼（簡單認證）
 ADMIN_PASSWORD = '33urriii'
@@ -22,6 +23,61 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 CORS(app)
 
+
+def _clean_excel_value(value):
+    """將 Excel 欄位值轉為可用字串（排除 NaN）。"""
+    if pd.isna(value):
+        return ''
+    text = str(value).strip()
+    if text.lower() == 'nan':
+        return ''
+    return text
+
+
+def _get_first_available_value(row, columns):
+    """依欄位候選順序取第一個有值的欄位（容錯欄名空白/換行）。"""
+    normalized_to_real = {}
+    for real_column in row.index:
+        normalized_name = str(real_column).replace('\ufeff', '').replace('\n', '').replace('\r', '').strip()
+        normalized_to_real[normalized_name] = real_column
+
+    for column in columns:
+        normalized_candidate = str(column).replace('\ufeff', '').replace('\n', '').replace('\r', '').strip()
+        real_column = normalized_to_real.get(normalized_candidate)
+        if real_column is not None:
+            value = _clean_excel_value(row[real_column])
+            if value:
+                return value
+    return ''
+
+
+def _build_participant_from_row(row):
+    """支援 guest_final 與舊版欄位格式的參加者映射。"""
+    name = _get_first_available_value(row, ['隊員姓名', '人名中文', '姓名'])
+    if not name:
+        return None
+
+    organization = _get_first_available_value(
+        row, ['隊伍名稱', '校名中文', '組織/學校']
+    )
+    phone = _get_first_available_value(
+        row, ['貴隊伍聯絡代表人手機號碼', '電話']
+    )
+    email = _get_first_available_value(row, ['Email', '電子郵件'])
+    competition_name = _get_first_available_value(
+        row, ['競賽', '參加AI CUP 2024競賽', '競賽名稱']
+    )
+    seat_number = _get_first_available_value(row, ['座號', '座位號碼'])
+
+    return Participant(
+        name=name,
+        email=email,
+        phone=phone,
+        organization=organization,
+        competition_name=competition_name,
+        seat_number=seat_number
+    )
+
 # 資料庫模型
 class Participant(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -29,6 +85,8 @@ class Participant(db.Model):
     email = db.Column(db.String(100), nullable=True)
     phone = db.Column(db.String(20), nullable=True)
     organization = db.Column(db.String(200), nullable=True)
+    competition_name = db.Column(db.String(200), nullable=True)
+    seat_number = db.Column(db.String(50), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     def __repr__(self):
@@ -45,10 +103,23 @@ class CheckinLog(db.Model):
     def __repr__(self):
         return f'<CheckinLog {self.participant.name} at {self.checkin_time}>'
 
+
+def ensure_participant_schema():
+    """若舊資料庫缺少欄位，啟動時自動補齊。"""
+    inspector = inspect(db.engine)
+    columns = {column['name'] for column in inspector.get_columns('participant')}
+    if 'competition_name' not in columns:
+        db.session.execute(text("ALTER TABLE participant ADD COLUMN competition_name VARCHAR(200)"))
+        db.session.commit()
+    if 'seat_number' not in columns:
+        db.session.execute(text("ALTER TABLE participant ADD COLUMN seat_number VARCHAR(50)"))
+        db.session.commit()
+
 # 建立資料庫表格
 with app.app_context():
     try:
         db.create_all()
+        ensure_participant_schema()
         print('資料庫表格建立成功')
         
         # 自動匯入參加者資料（如果資料庫是空的）
@@ -57,14 +128,8 @@ with app.app_context():
                 df = pd.read_excel(FIXED_XLSX_PATH)
                 count = 0
                 for _, row in df.iterrows():
-                    name = str(row.get('人名中文', '')).strip()
-                    if name and name != 'nan' and name != 'NaN':
-                        participant = Participant(
-                            name=name,
-                            email='',
-                            phone='',
-                            organization=str(row.get('校名中文', '')).strip() if '校名中文' in df.columns else ''
-                        )
+                    participant = _build_participant_from_row(row)
+                    if participant:
                         db.session.add(participant)
                         count += 1
                 db.session.commit()
@@ -89,14 +154,8 @@ def import_participants_from_fixed():
         
         count = 0
         for _, row in df.iterrows():
-            name = str(row.get('人名中文', '')).strip()
-            if name and name != 'nan' and name != 'NaN':
-                participant = Participant(
-                    name=name,
-                    email='',
-                    phone='',
-                    organization=str(row.get('校名中文', '')).strip() if '校名中文' in df.columns else ''
-                )
+            participant = _build_participant_from_row(row)
+            if participant:
                 db.session.add(participant)
                 count += 1
         db.session.commit()
@@ -166,25 +225,6 @@ def admin():
                          total_count=total_count,
                          checked_in_count=checked_in_count)
 
-'''
-@app.route('/api/stats', methods=['GET'])
-def api_stats():
-    """API: 取得報到統計資料（供公開主頁面使用）"""
-    total_count = db.session.query(Participant).count()
-    checked_in_count = db.session.query(CheckinLog).distinct(CheckinLog.participant_id).count()
-    
-    # 計算報到率
-    checkin_rate = 0
-    if total_count > 0:
-        checkin_rate = round((checked_in_count / total_count) * 100, 1)
-        
-    return jsonify({
-        'success': True,
-        'total_count': total_count,
-        'checked_in_count': checked_in_count,
-        'checkin_rate': checkin_rate
-    })
-'''
 
 @app.route('/api/checkin', methods=['POST'])
 def api_checkin():
@@ -219,9 +259,47 @@ def api_checkin():
         'message': f'{participant.name} 報到成功！',
         'participant': {
             'name': participant.name,
-            'organization': participant.organization
+            'organization': participant.organization,
+            'competition_name': participant.competition_name,
+            'seat_number': participant.seat_number
         }
     })
+
+@app.route('/api/admin_stats', methods=['GET'])
+def api_admin_stats():
+    """API: 獲取管理後台統計資訊"""
+    try:
+        participants = Participant.query.all()
+        total_count = len(participants)
+        checked_in_count = db.session.query(CheckinLog).distinct(CheckinLog.participant_id).count()
+        
+        # 獲取每個參加者的報到狀態
+        participants_data = []
+        for participant in participants:
+            checkin_record = CheckinLog.query.filter(
+                CheckinLog.participant_id == participant.id
+            ).first()
+            
+            participants_data.append({
+                'id': participant.id,
+                'name': participant.name,
+                'email': participant.email,
+                'organization': participant.organization or '未填寫',
+                'competition_name': participant.competition_name or '未填寫',
+                'seat_number': participant.seat_number or '未填寫',
+                'is_checked_in': checkin_record is not None,
+                'checkin_time': checkin_record.checkin_time.strftime('%Y-%m-%d %H:%M:%S') if checkin_record else None
+            })
+        
+        return jsonify({
+            'success': True,
+            'total_count': total_count,
+            'checked_in_count': checked_in_count,
+            'checkin_rate': round(checked_in_count / total_count * 100, 1) if total_count > 0 else 0,
+            'participants': participants_data
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 @app.route('/api/search', methods=['POST'])
 def api_search():
@@ -232,12 +310,14 @@ def api_search():
     if not query:
         return jsonify({'success': False, 'message': '請輸入搜尋關鍵字'}), 400
     
-    # 搜尋參加者（姓名、Email、組織）
+    # 搜尋參加者（姓名、Email、組織、競賽名稱）
     participants = Participant.query.filter(
         db.or_(
             Participant.name.contains(query),
             Participant.email.contains(query),
-            Participant.organization.contains(query)
+            Participant.organization.contains(query),
+            Participant.competition_name.contains(query),
+            Participant.seat_number.contains(query)
         )
     ).all()
     
@@ -253,6 +333,8 @@ def api_search():
             'name': p.name,
             'email': p.email,
             'organization': p.organization,
+            'competition_name': p.competition_name,
+            'seat_number': p.seat_number,
             'checkin_status': checkin_record is not None,
             'checkin_time': checkin_record.checkin_time.strftime('%Y-%m-%d %H:%M:%S') if checkin_record else None
         })
@@ -278,21 +360,19 @@ def upload():
                 df = pd.read_excel(file)
                 
                 # 清空現有資料
-                Participant.query.delete()
                 CheckinLog.query.delete()
+                Participant.query.delete()
                 
                 # 匯入新資料
+                count = 0
                 for _, row in df.iterrows():
-                    participant = Participant(
-                        name=str(row.get('姓名', '')),
-                        email=str(row.get('Email', '')),
-                        phone=str(row.get('電話', '')),
-                        organization=str(row.get('組織/學校', ''))
-                    )
-                    db.session.add(participant)
+                    participant = _build_participant_from_row(row)
+                    if participant:
+                        db.session.add(participant)
+                        count += 1
                 
                 db.session.commit()
-                flash(f'成功匯入 {len(df)} 筆參加者資料')
+                flash(f'成功匯入 {count} 筆參加者資料')
                 
             except Exception as e:
                 flash(f'匯入失敗: {str(e)}')
@@ -303,13 +383,13 @@ def upload():
 
 @app.route('/qr_display/<int:participant_id>')
 def qr_display(participant_id):
-    """顯示參加者的QR Code報到頁面"""
+    
     participant = Participant.query.get_or_404(participant_id)
     return render_template('qr_display.html', participant=participant)
 
 @app.route('/qr/<int:participant_id>')
 def generate_qr(participant_id):
-    """為特定參加者生成QR Code（保留原有功能）"""
+    
     participant = Participant.query.get_or_404(participant_id)
     
     # 生成QR Code內容：直接使用可點擊的完整簽到URL
@@ -378,7 +458,9 @@ def api_mobile_checkin(participant_id):
         'message': f'{participant.name} 報到成功！',
         'participant': {
             'name': participant.name,
-            'organization': participant.organization
+            'organization': participant.organization,
+            'competition_name': participant.competition_name,
+            'seat_number': participant.seat_number
         }
     })
 
@@ -424,6 +506,8 @@ def export_data():
                 'Email': participant.email or '',
                 '電話': participant.phone or '',
                 '組織/學校': participant.organization or '',
+                '競賽名稱': participant.competition_name or '',
+                '座號': participant.seat_number or '',
                 '報到狀態': '已報到' if checkin_record else '未報到',
                 '報到時間': checkin_record.checkin_time.strftime('%Y-%m-%d %H:%M:%S') if checkin_record else '',
                 '報到方式': checkin_record.checkin_method if checkin_record else ''
