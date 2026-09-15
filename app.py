@@ -478,11 +478,6 @@ def generate_qr(participant_id):
                          participant=participant, 
                          qr_code=img_str)
 
-@app.route('/qr_scanner')
-def qr_scanner():
-    """QR Code掃描器頁面"""
-    return render_template('qr_scanner.html')
-
 @app.route('/mobile_checkin/<int:participant_id>')
 def mobile_checkin(participant_id):
     """手機報到頁面（透過QR Code掃描進入）"""
