@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QR Code - {{ participant.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+    <style>
+        .qr-box {
+            text-align: center;
+            margin-top: 24px;
+        }
+        .qr-box img {
+            max-width: 240px;
+            border-radius: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="page-wrap">
+        <div class="main-card">
+            <a href="/admin" class="back-link">← 返回後台</a>
+
+            <span class="badge-pill">AI CUP 2026</span>
+            <h1 class="page-title">{{ participant.name }}</h1>
+            <p class="page-subtitle">{{ participant.organization or '未填寫組織' }}</p>
+
+            {% if qr_code %}
+            <div class="qr-box">
+                <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code">
+                <p class="page-subtitle" style="margin-top:12px;">掃描 QR Code 完成報到</p>
+            </div>
+            {% else %}
+            <div class="result-card" style="margin-top:24px;">
+                <p class="page-subtitle" style="margin:0;">此頁面僅顯示參加者資訊，請使用 /qr/&lt;id&gt; 取得 QR Code。</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>

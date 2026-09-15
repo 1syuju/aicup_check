@@ -3,246 +3,138 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>管理員後台 - AI CUP 2025</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
-    <style>
-        body {
-            background: #f8f9fa;
-            font-family: 'Microsoft JhengHei', sans-serif;
-        }
-        .navbar {
-            background: linear-gradient(45deg, #a2a6b9, #7685c9);
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-        }
-        .card {
-            border: none;
-            border-radius: 15px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
-            margin-bottom: 20px;
-        }
-        .card-header {
-            background: linear-gradient(45deg, #a2a6b9, #7685c9);
-            color: white;
-            border-radius: 15px 15px 0 0 !important;
-        }
-        .stats-card {
-            background: linear-gradient(45deg, #a2a6b9, #7685c9);
-            color: white;
-            border-radius: 15px;
-            padding: 20px;
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .stats-number {
-            font-size: 2.5rem;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .search-box {
-            border-radius: 25px;
-            border: 2px solid #e9ecef;
-            padding: 12px 20px;
-        }
-        .search-box:focus {
-            border-color: #7685c9;
-            box-shadow: 0 0 0 0.2rem rgba(118, 133, 201, 0.25);
-        }
-        .table th {
-            background: #f8f9fa;
-            border-top: none;
-            font-weight: 600;
-            position: sticky;
-            top: 0;
-            z-index: 1;
-        }
-        .status-badge {
-            border-radius: 20px;
-            padding: 8px 16px;
-            font-size: 12px;
-            font-weight: 600;
-        }
-        .btn-action {
-            border-radius: 20px;
-            padding: 8px 16px;
-            font-size: 12px;
-        }
-        .back-btn {
-            color: white;
-            text-decoration: none;
-        }
-        .back-btn:hover {
-            color: #f8f9fa;
-        }
-        .participants-scroll {
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-    </style>
+    <title>管理員後台 - AI CUP 2026</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
 </head>
 <body>
-    <!-- 導航欄 -->
-    <nav class="navbar navbar-expand-lg navbar-dark">
-        <div class="container">
-            <a class="navbar-brand" href="/">
-                <i class="fas fa-clipboard-check me-2"></i>
-                AI CUP 2025 報到系統
-            </a>
-            <div class="navbar-nav ms-auto">
-                <a class="nav-link back-btn" href="/">
-                    <i class="fas fa-home me-1"></i>返回首頁
-                </a>
-                <a class="nav-link back-btn" href="/admin_logout">
-                    <i class="fas fa-sign-out-alt me-1"></i>登出
-                </a>
+    <div class="admin-page">
+        <div class="admin-header">
+            <div>
+                <span class="badge-pill">AI CUP 2026</span>
+                <h1>管理後台</h1>
+            </div>
+            <div class="admin-nav">
+                <a href="/">返回首頁</a>
+                <a href="/admin_logout">登出</a>
             </div>
         </div>
-    </nav>
 
-    <div class="container mt-4">
-        <!-- 統計卡片 -->
-        <div class="row">
-            <div class="col-md-4">
-                <div class="stats-card">
-                    <i class="fas fa-users fa-2x mb-3"></i>
-                    <div class="stats-number">{{ total_count }}</div>
-                    <div>總參加人數</div>
+        <div class="admin-container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="flash-message" style="margin-bottom:16px;{% if category in ['error', 'warning'] %}background:#fef2f2;color:#991b1b;border-color:#fecaca;{% elif category == 'success' %}background:#ecfdf5;color:#047857;border-color:#bbf7d0;{% endif %}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-number">{{ total_count }}</div>
+                    <div class="stat-label">總參加人數</div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stats-card">
-                    <i class="fas fa-check-circle fa-2x mb-3"></i>
-                    <div class="stats-number">{{ checked_in_count }}</div>
-                    <div>已報到人數</div>
+                <div class="stat-card">
+                    <div class="stat-number">{{ checked_in_count }}</div>
+                    <div class="stat-label">已報到人數</div>
                 </div>
-            </div>
-            <div class="col-md-4">
-                <div class="stats-card">
-                    <i class="fas fa-percentage fa-2x mb-3"></i>
-                    <div class="stats-number">
+                <div class="stat-card">
+                    <div class="stat-number">
                         {% if total_count > 0 %}
                             {{ "%.1f"|format(checked_in_count / total_count * 100) }}%
                         {% else %}
                             0%
                         {% endif %}
                     </div>
-                    <div>報到率</div>
+                    <div class="stat-label">報到率</div>
                 </div>
             </div>
-        </div>
 
-        <!-- 功能按鈕 -->
-        <div class="row mb-4">
-            <div class="col-md-6">
-                <a href="/import_fixed" class="btn btn-warning btn-lg me-2">
-                    <i class="fas fa-file-import me-2"></i>重新載入固定名單
-                </a>
-                <button class="btn btn-success btn-lg" onclick="exportData()">
-                    <i class="fas fa-download me-2"></i>匯出報到資料
-                </button>
-            </div>
-            <div class="col-md-6">
-                <div class="input-group">
-                    <input type="text" class="form-control search-box" id="searchInput" 
+            <div class="admin-toolbar">
+                <a href="/import_fixed" class="btn-outline">重新載入固定名單</a>
+                <button class="btn-dark" onclick="exportData()">匯出報到資料</button>
+                <div class="search-wrap">
+                    <input type="text" class="form-input" id="searchInput"
                            placeholder="搜尋參加者（姓名、組織、競賽、座號）">
-                    <button class="btn btn-outline-secondary" type="button" onclick="searchParticipants()">
-                        <i class="fas fa-search"></i>
-                    </button>
+                    <button class="btn-dark" type="button" onclick="searchParticipants()">搜尋</button>
                 </div>
             </div>
-        </div>
 
-        <!-- 參加者列表 -->
-        <div class="card">
-            <div class="card-header">
-                <h5 class="mb-0">
-                    <i class="fas fa-list me-2"></i>
-                    參加者列表
-                </h5>
-            </div>
-            <div class="card-body">
-                <div class="table-responsive participants-scroll">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>編號</th>
-                                <th>姓名</th>
-                                <th>組織/學校</th>
-                                <th>競賽</th>
-                                <th>座號</th>
-                                <th>報到狀態</th>
-                                <th>報到時間</th>
-                                <th>操作</th>
-                            </tr>
-                        </thead>
-                        <tbody id="participantsTable">
-                            {% for participant in participants %}
-                            <tr>
-                                <td>{{ loop.index }}</td>
-                                <td>{{ participant.name }}</td>
-                                <td>{{ participant.organization or '未填寫' }}</td>
-                                <td>{{ participant.competition_name or '未填寫' }}</td>
-                                <td>{{ participant.seat_number or '未填寫' }}</td>
-                                <td>
-                                    {% if participant.is_checked_in %}
-                                        <span class="badge bg-success status-badge">
-                                            <i class="fas fa-check me-1"></i>已報到
-                                        </span>
-                                    {% else %}
-                                        <span class="badge bg-secondary status-badge">
-                                            <i class="fas fa-clock me-1"></i>未報到
-                                        </span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if participant.is_checked_in %}
-                                        {% set checkin = participant.checkins[0] if participant.checkins else None %}
-                                        {% if checkin %}
-                                            {{ checkin.checkin_time.strftime('%Y-%m-%d %H:%M:%S') }}
+            <div class="admin-card">
+                <div class="admin-card-header">參加者列表</div>
+                <div class="admin-card-body">
+                    <div class="participants-scroll">
+                        <table class="admin-table">
+                            <thead>
+                                <tr>
+                                    <th>編號</th>
+                                    <th>姓名</th>
+                                    <th>組織/學校</th>
+                                    <th>競賽</th>
+                                    <th>座號</th>
+                                    <th>報到狀態</th>
+                                    <th>報到時間</th>
+                                    <th>操作</th>
+                                </tr>
+                            </thead>
+                            <tbody id="participantsTable">
+                                {% for participant in participants %}
+                                <tr>
+                                    <td>{{ loop.index }}</td>
+                                    <td>{{ participant.name }}</td>
+                                    <td>{{ participant.organization or '未填寫' }}</td>
+                                    <td>{{ participant.competition_name or '未填寫' }}</td>
+                                    <td>{{ participant.seat_number or '未填寫' }}</td>
+                                    <td>
+                                        {% if participant.is_checked_in %}
+                                            <span class="tag-success">已報到</span>
+                                        {% else %}
+                                            <span class="tag-pending">未報到</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        {% if participant.is_checked_in %}
+                                            {% set checkin = participant.checkins[0] if participant.checkins else None %}
+                                            {% if checkin %}
+                                                {{ checkin.checkin_time|localtime }}
+                                            {% else %}
+                                                -
+                                            {% endif %}
                                         {% else %}
                                             -
                                         {% endif %}
-                                    {% else %}
-                                        -
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if not participant.is_checked_in %}
-                                        <a href="/manual_checkin/{{ participant.id }}" 
-                                           class="btn btn-success btn-action"
-                                           onclick="return confirm('確定要為此參加者進行手動報到嗎？')"
-                                           title="手動報到">
-                                            <i class="fas fa-check"></i> 報到
-                                        </a>
-                                    {% endif %}
-                                </td>
-                            </tr>
-                            {% endfor %}
-                        </tbody>
-                    </table>
+                                    </td>
+                                    <td>
+                                        {% if not participant.is_checked_in %}
+                                            <a href="/manual_checkin/{{ participant.id }}"
+                                               class="btn-sm-dark"
+                                               onclick="return confirm('確定要為此參加者進行手動報到嗎？')">
+                                                報到
+                                            </a>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- 搜尋結果模態框 -->
-    <div class="modal fade" id="searchModal" tabindex="-1">
-        <div class="modal-dialog modal-lg">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">搜尋結果</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body" id="searchResults">
-                    <!-- 搜尋結果將在這裡顯示 -->
-                </div>
+    <div class="modal fade" id="searchModal" tabindex="-1" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.4); z-index:1000; align-items:center; justify-content:center; padding:16px;">
+        <div style="background:#fff; border-radius:16px; max-width:800px; width:100%; max-height:80vh; overflow:auto; padding:24px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+                <h5 style="margin:0;">搜尋結果</h5>
+                <button type="button" onclick="closeSearchModal()" style="border:none; background:none; font-size:20px; cursor:pointer;">×</button>
             </div>
+            <div id="searchResults"></div>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
-        // 搜尋參加者
         async function searchParticipants() {
             const query = document.getElementById('searchInput').value.trim();
             if (!query) {
@@ -253,14 +145,11 @@
             try {
                 const response = await fetch('/api/search', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
+                    headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ query })
                 });
 
                 const data = await response.json();
-                
                 if (data.success) {
                     displaySearchResults(data.results);
                 } else {
@@ -271,24 +160,22 @@
             }
         }
 
-        // 顯示搜尋結果
         function displaySearchResults(results) {
-            const modal = new bootstrap.Modal(document.getElementById('searchModal'));
+            const modal = document.getElementById('searchModal');
             const resultsContainer = document.getElementById('searchResults');
-            
+
             if (results.length === 0) {
-                resultsContainer.innerHTML = '<p class="text-center text-muted">沒有找到符合的結果</p>';
+                resultsContainer.innerHTML = '<p style="text-align:center;color:#666;">沒有找到符合的結果</p>';
             } else {
-                let html = '<div class="table-responsive"><table class="table">';
+                let html = '<div class="participants-scroll"><table class="admin-table">';
                 html += '<thead><tr><th>編號</th><th>姓名</th><th>組織</th><th>競賽</th><th>座號</th><th>報到狀態</th><th>報到時間</th></tr></thead><tbody>';
-                
+
                 results.forEach((participant, index) => {
-                    const status = participant.checkin_status ? 
-                        '<span class="badge bg-success">已報到</span>' : 
-                        '<span class="badge bg-secondary">未報到</span>';
-                    
+                    const status = participant.checkin_status ?
+                        '<span class="tag-success">已報到</span>' :
+                        '<span class="tag-pending">未報到</span>';
                     const checkinTime = participant.checkin_time || '-';
-                    
+
                     html += `<tr>
                         <td>${index + 1}</td>
                         <td>${participant.name}</td>
@@ -299,48 +186,47 @@
                         <td>${checkinTime}</td>
                     </tr>`;
                 });
-                
+
                 html += '</tbody></table></div>';
                 resultsContainer.innerHTML = html;
             }
-            
-            modal.show();
+
+            modal.style.display = 'flex';
         }
 
-        // 匯出資料
+        function closeSearchModal() {
+            document.getElementById('searchModal').style.display = 'none';
+        }
+
         function exportData() {
             window.location.href = '/export';
         }
 
-        // 按Enter鍵搜尋
         document.getElementById('searchInput').addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 searchParticipants();
             }
         });
 
-        // 更新統計資訊
         function updateStats(data) {
-            // 更新統計卡片
-            document.querySelectorAll('.stats-card .stats-number')[0].textContent = data.total_count;
-            document.querySelectorAll('.stats-card .stats-number')[1].textContent = data.checked_in_count;
-            document.querySelectorAll('.stats-card .stats-number')[2].textContent = data.checkin_rate + '%';
+            const numbers = document.querySelectorAll('.stat-number');
+            numbers[0].textContent = data.total_count;
+            numbers[1].textContent = data.checked_in_count;
+            numbers[2].textContent = data.checkin_rate + '%';
         }
 
-        // 更新參加者列表
         function updateParticipantsTable(participants) {
             const tbody = document.getElementById('participantsTable');
             let html = '';
-            
+
             participants.forEach((participant, index) => {
-                const statusBadge = participant.is_checked_in ? 
-                    '<span class="badge bg-success status-badge"><i class="fas fa-check me-1"></i>已報到</span>' :
-                    '<span class="badge bg-secondary status-badge"><i class="fas fa-clock me-1"></i>未報到</span>';
-                
+                const statusBadge = participant.is_checked_in ?
+                    '<span class="tag-success">已報到</span>' :
+                    '<span class="tag-pending">未報到</span>';
                 const checkinTime = participant.checkin_time || '-';
                 const actionBtn = participant.is_checked_in ? '' :
-                    `<a href="/manual_checkin/${participant.id}" class="btn btn-success btn-action" onclick="return confirm('確定要為此參加者進行手動報到嗎？')" title="手動報到"><i class="fas fa-check"></i> 報到</a>`;
-                
+                    `<a href="/manual_checkin/${participant.id}" class="btn-sm-dark" onclick="return confirm('確定要為此參加者進行手動報到嗎？')">報到</a>`;
+
                 html += `
                     <tr>
                         <td>${index + 1}</td>
@@ -354,16 +240,14 @@
                     </tr>
                 `;
             });
-            
+
             tbody.innerHTML = html;
         }
 
-        // 自動刷新報到狀態（每30秒）
         async function refreshCheckinStatus() {
             try {
                 const response = await fetch('/api/admin_stats');
                 const data = await response.json();
-                
                 if (data.success) {
                     updateStats(data);
                     updateParticipantsTable(data.participants);
@@ -372,11 +256,9 @@
                 console.error('更新狀態失敗:', error);
             }
         }
-        
-        // 每30秒自動刷新一次
+
         setInterval(refreshCheckinStatus, 30000);
 
-        // 頁面載入時檢查名單
         document.addEventListener('DOMContentLoaded', function() {
             const totalCount = parseInt('{{ total_count }}');
             if (totalCount === 0) {
@@ -384,9 +266,6 @@
                     window.location.href = '/import_fixed';
                 }
             }
-            
-            // 顯示自動刷新提示
-            console.log('報到狀態將每30秒自動更新');
         });
     </script>
 </body>

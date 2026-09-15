@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>手機報到 - {{ participant.name }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/app.css') }}">
+</head>
+<body>
+    <div class="page-wrap">
+        <div class="main-card">
+            <span class="badge-pill">AI CUP 2026</span>
+            <h1 class="page-title">手機報到</h1>
+            <p class="page-subtitle">確認資料後完成報到</p>
+
+            <div class="result-card" style="margin-top:28px;">
+                <div class="result-header">
+                    <div class="avatar">{{ participant.name[0] if participant.name else '?' }}</div>
+                    <div class="result-info">
+                        <p class="result-name">{{ participant.name }}</p>
+                        <p class="result-org">{{ participant.organization or '未填寫' }}</p>
+                    </div>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">競賽</span>
+                    <span class="detail-value">{{ participant.competition_name or '未填寫' }}</span>
+                </div>
+                <div class="detail-row">
+                    <span class="detail-label">座號</span>
+                    <span class="detail-value">{{ participant.seat_number or '未分配' }}</span>
+                </div>
+            </div>
+
+            {% if already_checked_in %}
+            <div class="flash-message" style="margin-top:20px;">您已經報到過了</div>
+            {% else %}
+            <div class="btn-stack">
+                <button type="button" class="btn-dark" id="checkinBtn">確認報到</button>
+            </div>
+            <div id="messageBox" style="margin-top:16px;"></div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if not already_checked_in %}
+    <script>
+        document.getElementById('checkinBtn').addEventListener('click', async function() {
+            const btn = this;
+            btn.disabled = true;
+            btn.textContent = '報到中...';
+
+            try {
+                const response = await fetch('/api/mobile_checkin/{{ participant.id }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await response.json();
+                const box = document.getElementById('messageBox');
+
+                if (data.success) {
+                    box.innerHTML = '<div class="flash-message">報到成功！</div>';
+                    btn.style.display = 'none';
+                } else {
+                    box.innerHTML = `<div class="error-box">${data.message}</div>`;
+                    btn.disabled = false;
+                    btn.textContent = '確認報到';
+                }
+            } catch (error) {
+                document.getElementById('messageBox').innerHTML = '<div class="error-box">網路錯誤，請稍後再試</div>';
+                btn.disabled = false;
+                btn.textContent = '確認報到';
+            }
+        });
+    </script>
+    {% endif %}
+</body>
+</html>

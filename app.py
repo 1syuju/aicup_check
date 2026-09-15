@@ -7,7 +7,40 @@ import pandas as pd
 import qrcode
 import io
 import base64
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
+import json
+import time
+
+LOCAL_TZ = timezone(timedelta(hours=8))
+DEBUG_LOG_PATH = os.path.join(os.path.dirname(__file__), 'debug-d610a5.log')
+
+
+def _debug_log(location, message, data=None, hypothesis_id=''):
+    # #region agent log
+    try:
+        payload = {
+            'sessionId': 'd610a5',
+            'runId': 'pre-fix',
+            'hypothesisId': hypothesis_id,
+            'location': location,
+            'message': message,
+            'data': data or {},
+            'timestamp': int(time.time() * 1000),
+        }
+        with open(DEBUG_LOG_PATH, 'a', encoding='utf-8') as f:
+            f.write(json.dumps(payload, ensure_ascii=False) + '\n')
+    except Exception:
+        pass
+    # #endregion
+
+
+def format_local_time(dt, fmt='%H:%M'):
+    """將 UTC 或 naive datetime 轉為 GMT+8 顯示。"""
+    if not dt:
+        return ''
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+    return dt.astimezone(LOCAL_TZ).strftime(fmt)
 
 # 寫死Excel名單路徑（Windows）
 FIXED_XLSX_PATH = r"C:\\Users\\USER\\Desktop\\python\\aicup2025_1\\guest_final.xlsx"
@@ -22,6 +55,11 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 CORS(app)
+
+
+@app.template_filter('localtime')
+def localtime_filter(dt, fmt='%Y-%m-%d %H:%M:%S'):
+    return format_local_time(dt, fmt)
 
 
 def _clean_excel_value(value):
@@ -253,16 +291,44 @@ def api_checkin():
     )
     db.session.add(checkin_log)
     db.session.commit()
-    
+
+    # #region agent log
+    _debug_log(
+        'app.py:api_checkin',
+        'checkin committed',
+        {
+            'has_checkin_time_attr': hasattr(checkin_log, 'checkin_time'),
+            'checkin_time_raw': str(checkin_log.checkin_time) if checkin_log.checkin_time else None,
+            'checkin_time_local': format_local_time(checkin_log.checkin_time),
+        },
+        hypothesis_id='B,C'
+    )
+    # #endregion
+
+    participant_payload = {
+        'name': participant.name,
+        'organization': participant.organization or '',
+        'competition_name': participant.competition_name or '',
+        'seat_number': participant.seat_number or '',
+        'checkin_time': format_local_time(checkin_log.checkin_time),
+    }
+
+    # #region agent log
+    _debug_log(
+        'app.py:api_checkin',
+        'api response payload',
+        {
+            'participant_keys': list(participant_payload.keys()),
+            'checkin_time_in_payload': participant_payload.get('checkin_time'),
+        },
+        hypothesis_id='A,D'
+    )
+    # #endregion
+
     return jsonify({
-        'success': True, 
+        'success': True,
         'message': f'{participant.name} 報到成功！',
-        'participant': {
-            'name': participant.name,
-            'organization': participant.organization,
-            'competition_name': participant.competition_name,
-            'seat_number': participant.seat_number
-        }
+        'participant': participant_payload
     })
 
 @app.route('/api/admin_stats', methods=['GET'])
@@ -288,7 +354,7 @@ def api_admin_stats():
                 'competition_name': participant.competition_name or '未填寫',
                 'seat_number': participant.seat_number or '未填寫',
                 'is_checked_in': checkin_record is not None,
-                'checkin_time': checkin_record.checkin_time.strftime('%Y-%m-%d %H:%M:%S') if checkin_record else None
+                'checkin_time': format_local_time(checkin_record.checkin_time, '%Y-%m-%d %H:%M:%S') if checkin_record else None
             })
         
         return jsonify({
@@ -336,7 +402,7 @@ def api_search():
             'competition_name': p.competition_name,
             'seat_number': p.seat_number,
             'checkin_status': checkin_record is not None,
-            'checkin_time': checkin_record.checkin_time.strftime('%Y-%m-%d %H:%M:%S') if checkin_record else None
+            'checkin_time': format_local_time(checkin_record.checkin_time, '%Y-%m-%d %H:%M:%S') if checkin_record else None
         })
     
     return jsonify({'success': True, 'results': results})
@@ -436,7 +502,11 @@ def mobile_checkin(participant_id):
 @app.route('/api/mobile_checkin/<int:participant_id>', methods=['POST'])
 def api_mobile_checkin(participant_id):
     participant = Participant.query.get_or_404(participant_id)
-    
+    data = request.get_json(silent=True) or {}
+    method = data.get('method', 'mobile')
+    if method not in ('mobile', 'qr'):
+        method = 'mobile'
+
     # 檢查是否已經報到
     existing_checkin = CheckinLog.query.filter(
         CheckinLog.participant_id == participant.id
@@ -448,20 +518,23 @@ def api_mobile_checkin(participant_id):
     # 記錄報到
     checkin_log = CheckinLog(
         participant_id=participant.id,
-        checkin_method='mobile'
+        checkin_method=method
     )
     db.session.add(checkin_log)
     db.session.commit()
     
+    participant_payload = {
+        'name': participant.name,
+        'organization': participant.organization or '',
+        'competition_name': participant.competition_name or '',
+        'seat_number': participant.seat_number or '',
+        'checkin_time': format_local_time(checkin_log.checkin_time),
+    }
+
     return jsonify({
-        'success': True, 
+        'success': True,
         'message': f'{participant.name} 報到成功！',
-        'participant': {
-            'name': participant.name,
-            'organization': participant.organization,
-            'competition_name': participant.competition_name,
-            'seat_number': participant.seat_number
-        }
+        'participant': participant_payload
     })
 
 @app.route('/manual_checkin/<int:participant_id>')
@@ -509,7 +582,7 @@ def export_data():
                 '競賽名稱': participant.competition_name or '',
                 '座號': participant.seat_number or '',
                 '報到狀態': '已報到' if checkin_record else '未報到',
-                '報到時間': checkin_record.checkin_time.strftime('%Y-%m-%d %H:%M:%S') if checkin_record else '',
+                '報到時間': format_local_time(checkin_record.checkin_time, '%Y-%m-%d %H:%M:%S') if checkin_record else '',
                 '報到方式': checkin_record.checkin_method if checkin_record else ''
             })
         
@@ -532,4 +605,4 @@ def export_data():
         return redirect(url_for('admin'))
 
 if __name__ == '__main__':
-    app.run(debug=True, host='0.0.0.0', port=5000) 
+    app.run(debug=True, host='0.0.0.0', port=5000)
