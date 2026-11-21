@@ -154,6 +154,185 @@ body {
     font-size: 14px;
 }
 
+/* ===== AI CUP 2026 主視覺風格 ===== */
+.home-page {
+    --kv-gold: #f6c45f;
+    --kv-gold-deep: #e9a23b;
+    --kv-cyan: #45d9ea;
+    --kv-lime: #9be04a;
+    --kv-navy: #0b0f4a;
+    --kv-ink: #070a33;
+    --kv-text-muted: rgba(255, 255, 255, 0.72);
+    --kv-line: rgba(255, 255, 255, 0.16);
+    background-color: var(--kv-ink);
+    background-image:
+        radial-gradient(circle at 82% 78%, rgba(246, 196, 95, 0.28), transparent 32%),
+        radial-gradient(circle at 12% 18%, rgba(69, 217, 234, 0.18), transparent 34%),
+        radial-gradient(circle at 70% 12%, rgba(176, 72, 214, 0.32), transparent 40%),
+        linear-gradient(135deg, #0b1158 0%, #1d1670 45%, #3d1a7a 75%, #4e1c7f 100%);
+    background-attachment: fixed;
+    color: #fff;
+}
+
+.home-page .page-wrap {
+    padding: 32px 16px;
+}
+
+.home-page .main-card {
+    max-width: 520px;
+    border: 1px solid rgba(246, 196, 95, 0.38);
+    border-radius: 20px;
+    background: rgba(9, 12, 60, 0.72);
+    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45), 0 0 40px rgba(176, 72, 214, 0.22);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    overflow: hidden;
+}
+
+.kv-banner {
+    display: block;
+    width: calc(100% + 56px);
+    margin: -32px -28px 24px;
+    aspect-ratio: 900 / 560;
+    object-fit: cover;
+    border-bottom: 1px solid rgba(246, 196, 95, 0.35);
+}
+
+.home-page .badge-pill {
+    border-color: rgba(246, 196, 95, 0.7);
+    background: rgba(246, 196, 95, 0.12);
+    color: var(--kv-gold);
+}
+
+.home-page .page-title {
+    color: #fff;
+    letter-spacing: 0.02em;
+}
+
+.home-page .page-subtitle,
+.home-page .page-subtitle + .page-subtitle,
+.home-page .footer-link,
+.home-page .back-link,
+.home-page .form-label,
+.home-page .seat-label,
+.home-page .detail-label,
+.home-page .result-org {
+    color: var(--kv-text-muted);
+}
+
+.home-page .back-link:hover,
+.home-page .footer-link:hover {
+    color: var(--kv-gold);
+}
+
+.home-page .btn-dark,
+.home-page .btn-submit {
+    background: linear-gradient(135deg, #ffd983, var(--kv-gold-deep));
+    color: var(--kv-navy);
+    box-shadow: 0 8px 24px rgba(246, 196, 95, 0.28);
+    font-weight: 700;
+}
+
+.home-page .btn-dark:hover,
+.home-page .btn-submit:hover {
+    background: linear-gradient(135deg, #ffe3a0, #f2b24c);
+    color: var(--kv-navy);
+    opacity: 1;
+}
+
+.home-page .btn-outline {
+    border-color: rgba(69, 217, 234, 0.45);
+    background: rgba(69, 217, 234, 0.08);
+    color: #fff;
+}
+
+.home-page .btn-outline:hover {
+    background: rgba(69, 217, 234, 0.18);
+    color: #fff;
+}
+
+.home-page .footer-divider,
+.home-page .form-divider {
+    border-top-color: var(--kv-line);
+}
+
+.home-page .flash-message {
+    border-color: rgba(246, 196, 95, 0.45);
+    background: rgba(246, 196, 95, 0.12);
+    color: #fff1d0;
+}
+
+.home-page .form-input {
+    border-color: rgba(255, 255, 255, 0.22);
+    background: rgba(255, 255, 255, 0.08);
+    color: #fff;
+}
+
+.home-page .form-input::placeholder {
+    color: rgba(255, 255, 255, 0.45);
+}
+
+.home-page .form-input:focus {
+    border-color: var(--kv-cyan);
+    box-shadow: 0 0 0 3px rgba(69, 217, 234, 0.2);
+}
+
+.home-page .result-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--kv-line);
+}
+
+.home-page .avatar {
+    background: linear-gradient(135deg, var(--kv-lime), var(--kv-cyan));
+    color: var(--kv-navy);
+}
+
+.home-page .result-name,
+.home-page .detail-value {
+    color: #fff;
+}
+
+.home-page .status-badge {
+    background: rgba(155, 224, 74, 0.12);
+    border-color: rgba(155, 224, 74, 0.5);
+    color: var(--kv-lime);
+}
+
+.home-page .status-dot {
+    background: var(--kv-lime);
+}
+
+.home-page .seat-box {
+    background: rgba(246, 196, 95, 0.1);
+    border: 1px solid rgba(246, 196, 95, 0.4);
+    color: var(--kv-gold);
+}
+
+.home-page .detail-row {
+    border-top-color: var(--kv-line);
+}
+
+.home-page .error-box {
+    background: rgba(248, 113, 113, 0.14);
+    border: 1px solid rgba(248, 113, 113, 0.45);
+    color: #fecaca;
+}
+
+@media (max-width: 600px) {
+    .home-page {
+        background-attachment: scroll;
+    }
+
+    .home-page .main-card {
+        padding: 28px 22px;
+    }
+
+    .kv-banner {
+        width: calc(100% + 44px);
+        margin: -28px -22px 20px;
+    }
+}
+
 .checkin-form {
     margin-top: 28px;
 }

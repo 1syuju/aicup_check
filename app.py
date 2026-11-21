@@ -103,7 +103,7 @@ def _build_participant_from_row(row):
     )
     email = _get_first_available_value(row, ['Email', '電子郵件'])
     competition_name = _get_first_available_value(
-        row, ['競賽', '參加AI CUP 2024競賽', '競賽名稱']
+        row, ['競賽', '參加AI CUP 2026競賽', '競賽名稱']
     )
     seat_number = _get_first_available_value(row, ['座號', '座位號碼'])
 
