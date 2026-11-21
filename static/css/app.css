@@ -154,168 +154,210 @@ body {
     font-size: 14px;
 }
 
-/* ===== AI CUP 2026 主視覺風格 ===== */
+/* ===== AI CUP 2026 主視覺 × 和風 ===== */
 .home-page {
-    --kv-gold: #f6c45f;
-    --kv-gold-deep: #e9a23b;
-    --kv-cyan: #45d9ea;
-    --kv-lime: #9be04a;
-    --kv-navy: #0b0f4a;
-    --kv-ink: #070a33;
-    --kv-text-muted: rgba(255, 255, 255, 0.72);
-    --kv-line: rgba(255, 255, 255, 0.16);
-    background-color: var(--kv-ink);
+    --wa-paper: #f7f5f0;
+    --wa-ink: #232857;          /* 紺 */
+    --wa-ink-soft: #4a4f7c;
+    --wa-muted: #8a8aa3;
+    --wa-gold: #b8955a;         /* 金茶 */
+    --wa-gold-soft: rgba(184, 149, 90, 0.35);
+    --wa-lavender: #ece8f4;     /* 藤 */
+    --wa-aqua: #e6f1f1;         /* 水 */
+    --wa-line: #e4e0d8;
+    background-color: var(--wa-paper);
     background-image:
-        radial-gradient(circle at 82% 78%, rgba(246, 196, 95, 0.28), transparent 32%),
-        radial-gradient(circle at 12% 18%, rgba(69, 217, 234, 0.18), transparent 34%),
-        radial-gradient(circle at 70% 12%, rgba(176, 72, 214, 0.32), transparent 40%),
-        linear-gradient(135deg, #0b1158 0%, #1d1670 45%, #3d1a7a 75%, #4e1c7f 100%);
+        radial-gradient(circle at 88% 8%, rgba(150, 120, 200, 0.16), transparent 38%),
+        radial-gradient(circle at 6% 92%, rgba(110, 190, 196, 0.16), transparent 36%),
+        radial-gradient(circle at 92% 96%, rgba(214, 178, 110, 0.14), transparent 30%);
     background-attachment: fixed;
-    color: #fff;
+    color: var(--wa-ink);
+    font-family: "Noto Sans TC", "Microsoft JhengHei", sans-serif;
+    letter-spacing: 0.04em;
 }
 
 .home-page .page-wrap {
-    padding: 32px 16px;
+    padding: 40px 16px;
 }
 
 .home-page .main-card {
-    max-width: 520px;
-    border: 1px solid rgba(246, 196, 95, 0.38);
-    border-radius: 20px;
-    background: rgba(9, 12, 60, 0.72);
-    box-shadow: 0 24px 70px rgba(0, 0, 0, 0.45), 0 0 40px rgba(176, 72, 214, 0.22);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
+    position: relative;
+    max-width: 480px;
+    padding: 40px 36px 32px;
+    border: 1px solid var(--wa-line);
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.86);
+    box-shadow: 0 18px 50px rgba(35, 40, 87, 0.08);
     overflow: hidden;
+}
+
+/* 上緣細金線 */
+.home-page .main-card::before {
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 36px;
+    right: 36px;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--wa-gold), transparent);
 }
 
 .kv-banner {
     display: block;
-    width: calc(100% + 56px);
-    margin: -32px -28px 24px;
+    width: 100%;
+    margin: 0 0 28px;
     aspect-ratio: 900 / 560;
     object-fit: cover;
-    border-bottom: 1px solid rgba(246, 196, 95, 0.35);
+    border-radius: 2px;
+    box-shadow: 0 8px 24px rgba(35, 40, 87, 0.12);
 }
 
 .home-page .badge-pill {
-    border-color: rgba(246, 196, 95, 0.7);
-    background: rgba(246, 196, 95, 0.12);
-    color: var(--kv-gold);
+    padding: 0 0 0 10px;
+    border: none;
+    border-left: 2px solid var(--wa-gold);
+    border-radius: 0;
+    background: none;
+    color: var(--wa-gold);
+    font-size: 12px;
+    letter-spacing: 0.24em;
 }
 
 .home-page .page-title {
-    color: #fff;
-    letter-spacing: 0.02em;
+    margin-top: 4px;
+    color: var(--wa-ink);
+    font-family: "Noto Serif TC", "Noto Serif JP", serif;
+    font-weight: 600;
+    font-size: 30px;
+    letter-spacing: 0.12em;
 }
 
 .home-page .page-subtitle,
-.home-page .page-subtitle + .page-subtitle,
+.home-page .page-subtitle + .page-subtitle {
+    color: var(--wa-muted);
+    letter-spacing: 0.08em;
+}
+
 .home-page .footer-link,
 .home-page .back-link,
 .home-page .form-label,
 .home-page .seat-label,
 .home-page .detail-label,
 .home-page .result-org {
-    color: var(--kv-text-muted);
+    color: var(--wa-muted);
 }
 
 .home-page .back-link:hover,
 .home-page .footer-link:hover {
-    color: var(--kv-gold);
+    color: var(--wa-ink);
 }
 
 .home-page .btn-dark,
 .home-page .btn-submit {
-    background: linear-gradient(135deg, #ffd983, var(--kv-gold-deep));
-    color: var(--kv-navy);
-    box-shadow: 0 8px 24px rgba(246, 196, 95, 0.28);
-    font-weight: 700;
+    border-radius: 2px;
+    background: var(--wa-ink);
+    color: #fff;
+    font-weight: 500;
+    letter-spacing: 0.3em;
+    box-shadow: inset 0 -2px 0 var(--wa-gold);
+    transition: background 0.2s;
 }
 
 .home-page .btn-dark:hover,
 .home-page .btn-submit:hover {
-    background: linear-gradient(135deg, #ffe3a0, #f2b24c);
-    color: var(--kv-navy);
+    background: #343a75;
+    color: #fff;
     opacity: 1;
 }
 
 .home-page .btn-outline {
-    border-color: rgba(69, 217, 234, 0.45);
-    background: rgba(69, 217, 234, 0.08);
-    color: #fff;
+    border-radius: 2px;
+    border-color: var(--wa-ink);
+    background: transparent;
+    color: var(--wa-ink);
+    letter-spacing: 0.2em;
 }
 
 .home-page .btn-outline:hover {
-    background: rgba(69, 217, 234, 0.18);
-    color: #fff;
+    background: var(--wa-lavender);
+    color: var(--wa-ink);
 }
 
 .home-page .footer-divider,
 .home-page .form-divider {
-    border-top-color: var(--kv-line);
+    border-top: 1px solid var(--wa-line);
 }
 
 .home-page .flash-message {
-    border-color: rgba(246, 196, 95, 0.45);
-    background: rgba(246, 196, 95, 0.12);
-    color: #fff1d0;
+    border: none;
+    border-left: 3px solid var(--wa-gold);
+    border-radius: 2px;
+    background: #faf6ee;
+    color: var(--wa-ink-soft);
 }
 
 .home-page .form-input {
-    border-color: rgba(255, 255, 255, 0.22);
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
+    border: none;
+    border-bottom: 1px solid #cfcbd9;
+    border-radius: 0;
+    background: transparent;
+    color: var(--wa-ink);
+    padding-left: 4px;
 }
 
 .home-page .form-input::placeholder {
-    color: rgba(255, 255, 255, 0.45);
+    color: #b5b3c4;
 }
 
 .home-page .form-input:focus {
-    border-color: var(--kv-cyan);
-    box-shadow: 0 0 0 3px rgba(69, 217, 234, 0.2);
+    border-bottom-color: var(--wa-ink);
 }
 
 .home-page .result-card {
-    background: rgba(255, 255, 255, 0.06);
-    border: 1px solid var(--kv-line);
+    border-radius: 2px;
+    background: linear-gradient(160deg, var(--wa-lavender), var(--wa-aqua));
 }
 
 .home-page .avatar {
-    background: linear-gradient(135deg, var(--kv-lime), var(--kv-cyan));
-    color: var(--kv-navy);
+    background: #fff;
+    border: 1px solid var(--wa-gold-soft);
+    color: var(--wa-ink);
+    font-family: "Noto Serif TC", serif;
 }
 
 .home-page .result-name,
 .home-page .detail-value {
-    color: #fff;
+    color: var(--wa-ink);
 }
 
 .home-page .status-badge {
-    background: rgba(155, 224, 74, 0.12);
-    border-color: rgba(155, 224, 74, 0.5);
-    color: var(--kv-lime);
+    border-radius: 2px;
+    border-color: var(--wa-gold-soft);
+    background: #fff;
+    color: var(--wa-gold);
 }
 
 .home-page .status-dot {
-    background: var(--kv-lime);
+    background: var(--wa-gold);
 }
 
 .home-page .seat-box {
-    background: rgba(246, 196, 95, 0.1);
-    border: 1px solid rgba(246, 196, 95, 0.4);
-    color: var(--kv-gold);
+    border-radius: 2px;
+    background: #fff;
+    color: var(--wa-ink);
+    font-family: "Noto Serif TC", serif;
+    letter-spacing: 0.1em;
 }
 
 .home-page .detail-row {
-    border-top-color: var(--kv-line);
+    border-top-color: rgba(35, 40, 87, 0.08);
 }
 
 .home-page .error-box {
-    background: rgba(248, 113, 113, 0.14);
-    border: 1px solid rgba(248, 113, 113, 0.45);
-    color: #fecaca;
+    border-left: 3px solid #b5495b;
+    border-radius: 2px;
+    background: #fbf0f1;
+    color: #8c2f40;
 }
 
 @media (max-width: 600px) {
@@ -324,12 +366,16 @@ body {
     }
 
     .home-page .main-card {
-        padding: 28px 22px;
+        padding: 32px 22px 28px;
     }
 
-    .kv-banner {
-        width: calc(100% + 44px);
-        margin: -28px -22px 20px;
+    .home-page .main-card::before {
+        left: 22px;
+        right: 22px;
+    }
+
+    .home-page .page-title {
+        font-size: 26px;
     }
 }
 
